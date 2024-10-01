@@ -1,0 +1,32 @@
+a. Nested U-Net (U-Net++)
+We’ll use the U-Net++ architecture, which improves upon the basic U-Net by introducing nested and dense skip connections.
+
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate
+from tensorflow.keras.models import Model
+
+def nested_unet(input_shape):
+    """Creates a U-Net++ (Nested U-Net) architecture."""
+    inputs = Input(input_shape)
+    
+    # Encoder part (downsampling)
+    c1 = Conv2D(64, kernel_size=(3, 3), activation='relu', padding='same')(inputs)
+    c1 = Conv2D(64, kernel_size=(3, 3), activation='relu', padding='same')(c1)
+    p1 = MaxPooling2D(pool_size=(2, 2))(c1)
+
+    # Nested skip connections and dense blocks
+    # More layers can be added for a deeper network
+
+    # Decoder part (upsampling)
+    u6 = UpSampling2D(size=(2, 2))(p1)
+    merge6 = concatenate([c1, u6], axis=3)
+    c6 = Conv2D(64, kernel_size=(3, 3), activation='relu', padding='same')(merge6)
+    c6 = Conv2D(64, kernel_size=(3, 3), activation='relu', padding='same')(c6)
+
+    outputs = Conv2D(1, kernel_size=(1, 1), activation='sigmoid')(c6)
+
+    model = Model(inputs, outputs)
+    return model
+
+# Example usage:
+model_nested_unet = nested_unet((256, 256, 1))
+model_nested_unet.compile(optimizer='adam', loss='binary_crossentropy', metrics=['dice_coefficient'])
