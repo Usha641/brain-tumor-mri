@@ -1,0 +1,44 @@
+1. Data Preprocessing
+We’ll apply CLAHE (Contrast Limited Adaptive Histogram Equalization) and ensure normalization/augmentation to enhance the visibility of metastasis in the brain MRI images
+
+import cv2
+import numpy as np
+import os
+from skimage import exposure
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+def apply_clahe(image):
+    """Applies CLAHE to an input MRI image."""
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    return clahe.apply(image)
+
+def preprocess_image(image):
+    """Preprocess MRI image using CLAHE, normalization, and augmentation."""
+    image_clahe = apply_clahe(image)
+    image_normalized = image_clahe / 255.0  # Normalization
+
+    # Data augmentation (flip, rotation, zoom, etc.)
+    datagen = ImageDataGenerator(horizontal_flip=True, vertical_flip=True, zoom_range=0.2)
+    image_augmented = datagen.random_transform(image_normalized)
+
+    return image_augmented
+
+def load_images_and_masks(image_dir, mask_dir):
+    """Load images and corresponding masks."""
+    images, masks = [], []
+    for img_name in os.listdir(image_dir):
+        img_path = os.path.join(image_dir, img_name)
+        mask_path = os.path.join(mask_dir, img_name)
+
+        if os.path.exists(mask_path):  # Ignore missing masks
+            image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+            mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+
+            preprocessed_image = preprocess_image(image)
+            images.append(preprocessed_image)
+            masks.append(mask / 255.0)  # Normalize mask
+
+    return np.array(images), np.array(masks)
+
+# Example usage:
+train_images, train_masks = load_images_and_masks('path_to_images', 'path_to_masks')
