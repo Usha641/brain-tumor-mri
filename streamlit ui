@@ -1,0 +1,18 @@
+import streamlit as st
+import requests
+from PIL import Image
+
+st.title("Brain MRI Metastasis Segmentation")
+
+uploaded_file = st.file_uploader("Upload Brain MRI Image", type="jpg")
+
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption='Uploaded MRI Image', use_column_width=True)
+
+    # Call FastAPI backend
+    response = requests.post("http://127.0.0.1:8000/predict", files={"file": uploaded_file})
+    prediction = response.json()["prediction"]
+
+    st.write("Segmentation Result: ")
+    st.image(prediction)
