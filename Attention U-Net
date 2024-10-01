@@ -1,0 +1,32 @@
+Attention U-Net introduces attention gates that help the model focus on the relevant regions.
+
+from tensorflow.keras.layers import Multiply, Activation
+
+def attention_block(x, g, inter_channel):
+    theta_x = Conv2D(inter_channel, (2, 2), strides=(2, 2))(x)
+    phi_g = Conv2D(inter_channel, (1, 1))(g)
+    add = Activation('relu')(theta_x + phi_g)
+    psi = Conv2D(1, (1, 1), activation='sigmoid')(add)
+    return Multiply()([x, psi])
+
+def attention_unet(input_shape):
+    inputs = Input(input_shape)
+
+    # Encoder (with Attention)
+    c1 = Conv2D(64, kernel_size=(3, 3), activation='relu', padding='same')(inputs)
+    p1 = MaxPooling2D(pool_size=(2, 2))(c1)
+
+    # Attention block in decoder
+    u6 = UpSampling2D(size=(2, 2))(p1)
+    attention = attention_block(c1, u6, 64)
+    merge6 = concatenate([attention, u6], axis=3)
+    c6 = Conv2D(64, kernel_size=(3, 3), activation='relu', padding='same')(merge6)
+
+    outputs = Conv2D(1, kernel_size=(1, 1), activation='sigmoid')(c6)
+
+    model = Model(inputs, outputs)
+    return model
+
+# Example usage:
+model_attention_unet = attention_unet((256, 256, 1))
+model_attention_unet.compile(optimizer='adam', loss='binary_crossentropy', metrics=['dice_coefficient'])
